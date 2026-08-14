@@ -22,6 +22,18 @@ const CATALOG = [
   { id: 'low-level-design', kind: 'modules', title: 'Low-Level Design', subtitle: 'OOD & Design Patterns (LLD)',
     blurb: 'OOP, SOLID, UML, and the design-pattern families, with LLD case studies.',
     accent: 'p2', emoji: '🧩', pill: '7 modules' },
+  { id: 'dsa', kind: 'modules', title: 'Data Structures & Algorithms', subtitle: 'DSA',
+    blurb: 'Complexity, arrays, hashing, linked lists, trees, graphs, and dynamic programming.',
+    accent: 'p1', emoji: '🧮', pill: '7 modules' },
+  { id: 'databases', kind: 'modules', title: 'Databases', subtitle: 'SQL, NoSQL & MongoDB',
+    blurb: 'Relational fundamentals, SQL, normalization, indexing, transactions, and MongoDB.',
+    accent: 'p2', emoji: '🗄️', pill: '6 modules' },
+  { id: 'devops', kind: 'modules', title: 'DevOps & Cloud', subtitle: 'CI/CD, Docker & Kubernetes',
+    blurb: 'CI/CD, containers, Kubernetes, Infrastructure as Code, observability, and AWS.',
+    accent: 'accent', emoji: '⚙️', pill: '6 modules' },
+  { id: 'nodejs', kind: 'modules', title: 'Node.js & Backend', subtitle: 'Backend Engineering',
+    blurb: 'Async JavaScript, Node internals, Express APIs, auth, data, and production.',
+    accent: 'green', emoji: '🟢', pill: '6 modules' },
   { id: 'architect', kind: 'architect', title: 'Software Architect', subtitle: 'Interview prep track',
     blurb: 'Study resources and Q&A across the dimensions a senior architect is assessed on.',
     accent: 'p2', emoji: '🧭', pill: 'Prep' },
@@ -30,10 +42,10 @@ const CATALOG = [
     accent: 'accent', emoji: '💬', pill: '50 Q&A' },
 ];
 
+const MODULE_COURSE_IDS = CATALOG.filter((c) => c.kind === 'modules').map((c) => c.id);
+
 export default function App() {
-  const [modules, setModules] = useState([]);
-  const [sdModules, setSdModules] = useState([]);
-  const [lldModules, setLldModules] = useState([]);
+  const [courseModules, setCourseModules] = useState({});
   const [questionCount, setQuestionCount] = useState(0);
   const [architectCount, setArchitectCount] = useState(0);
   const [doneKeys, setDoneKeys] = useState(new Set());
@@ -43,13 +55,13 @@ export default function App() {
 
   useEffect(() => {
     Promise.all([
-      api.listModules(), api.getProgress(), api.getQanda(), api.getQanda('architect'),
-      api.listModules('system-design'), api.listModules('low-level-design'),
+      api.getProgress(), api.getQanda(), api.getQanda('architect'),
+      ...MODULE_COURSE_IDS.map((id) => api.listModules(id)),
     ])
-      .then(([mods, prog, questions, architectQs, sd, lld]) => {
-        setModules(mods);
-        setSdModules(sd);
-        setLldModules(lld);
+      .then(([prog, questions, architectQs, ...moduleLists]) => {
+        const cm = {};
+        MODULE_COURSE_IDS.forEach((id, i) => { cm[id] = moduleLists[i]; });
+        setCourseModules(cm);
         setQuestionCount(questions.length);
         setArchitectCount(architectQs.length);
         setDoneKeys(new Set(prog.map((p) => p.key)));
@@ -83,10 +95,8 @@ export default function App() {
     setDoneKeys(new Set());
   };
 
-  // ── progress helpers ──
   const donePrefix = (prefix) => [...doneKeys].filter((k) => k.startsWith(prefix)).length;
-  const modsForCourse = (id) =>
-    id === 'system-design' ? sdModules : id === 'low-level-design' ? lldModules : modules;
+  const modsForCourse = (id) => courseModules[id] || [];
   const sumTotal = (mods) => mods.reduce((s, m) => s + m.resourceCount + m.problemCount, 0);
   const sumDone = (mods) => mods.reduce((s, m) => s + donePrefix(`${m.slug}:`), 0);
 
@@ -97,20 +107,20 @@ export default function App() {
     return { done: sumDone(mods), total: sumTotal(mods), label: 'Lessons' };
   };
 
-  const overall = useMemo(() => ({
-    done: doneKeys.size,
-    total: sumTotal(modules) + sumTotal(sdModules) + sumTotal(lldModules) + questionCount + architectCount,
-  }), [modules, sdModules, lldModules, questionCount, architectCount, doneKeys]);
+  const overall = useMemo(() => {
+    const modTotal = MODULE_COURSE_IDS.reduce((s, id) => s + sumTotal(courseModules[id] || []), 0);
+    return { done: doneKeys.size, total: modTotal + questionCount + architectCount };
+  }, [courseModules, questionCount, architectCount, doneKeys]);
 
   const catalogById = (id) => CATALOG.find((c) => c.id === id);
   const moduleTitle = (slug) =>
-    [...modules, ...sdModules, ...lldModules].find((m) => m.slug === slug)?.title || 'Lesson';
+    Object.values(courseModules).flat().find((m) => m.slug === slug)?.title || 'Lesson';
 
   const sectionsFor = (id) => {
     if (id === 'ai') {
       return [1, 2, 3].map((p) => ({
         label: PRIORITY_LABELS[p],
-        modules: modules.filter((m) => m.priority === p),
+        modules: modsForCourse('ai').filter((m) => m.priority === p),
       }));
     }
     return [{ label: null, modules: modsForCourse(id) }];
@@ -128,11 +138,10 @@ export default function App() {
     return <div className="error-screen"><h2>Something went wrong</h2><p>{error}</p></div>;
   }
 
-  // ── breadcrumb ──
   const crumb = () => {
     if (route.view === 'home') return null;
-    if (route.view === 'qanda') return <span className="crumb"><span className="sep">/</span><span className="current">Q&A Bank</span></span>;
-    if (route.view === 'architect') return <span className="crumb"><span className="sep">/</span><span className="current">Software Architect</span></span>;
+    const simple = { qanda: 'Q&A Bank', architect: 'Software Architect' }[route.view];
+    if (simple) return <span className="crumb"><span className="sep">/</span><span className="current">{simple}</span></span>;
     if (route.view === 'course') return <span className="crumb"><span className="sep">/</span><span className="current">{catalogById(route.id).title}</span></span>;
     if (route.view === 'lesson') {
       const c = catalogById(route.backId);
@@ -148,7 +157,6 @@ export default function App() {
     return null;
   };
 
-  // ── main body ──
   const body = () => {
     if (loading) return <p className="loading">Loading…</p>;
     if (route.view === 'home') {
@@ -174,22 +182,14 @@ export default function App() {
         </div>
       );
     }
-    if (route.view === 'qanda') {
-      return (
-        <div className="reading">
-          <button className="back-link" onClick={goHome}>← All courses</button>
-          <QandaView doneKeys={doneKeys} onToggle={toggleItem} />
-        </div>
-      );
-    }
-    if (route.view === 'architect') {
-      return (
-        <div className="reading">
-          <button className="back-link" onClick={goHome}>← All courses</button>
-          <ArchitectView doneKeys={doneKeys} onToggle={toggleItem} />
-        </div>
-      );
-    }
+    const wrap = (node) => (
+      <div className="reading">
+        <button className="back-link" onClick={goHome}>← All courses</button>
+        {node}
+      </div>
+    );
+    if (route.view === 'qanda') return wrap(<QandaView doneKeys={doneKeys} onToggle={toggleItem} />);
+    if (route.view === 'architect') return wrap(<ArchitectView doneKeys={doneKeys} onToggle={toggleItem} />);
     return null;
   };
 

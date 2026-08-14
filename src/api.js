@@ -5,9 +5,12 @@
 import { modules as aiModules } from './data/modules.js';
 import { qandaQuestions } from './data/qanda.js';
 import { architectResources, architectQuestions } from './data/architect.js';
-import { systemDesignModules, lowLevelDesignModules } from './data/courses.js';
+import { systemDesignModules, lowLevelDesignModules, dsaModules, databasesModules, devopsModules, nodejsModules } from './data/courses.js';
 
-const allModules = [...aiModules, ...systemDesignModules, ...lowLevelDesignModules];
+const allModules = [
+  ...aiModules, ...systemDesignModules, ...lowLevelDesignModules,
+  ...dsaModules, ...databasesModules, ...devopsModules, ...nodejsModules,
+];
 const allQanda = [...qandaQuestions, ...architectQuestions];
 
 const PROGRESS_KEY = 'ai-courseware:progress';
