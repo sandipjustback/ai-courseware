@@ -1,11 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api.js';
 import ModuleView from './components/ModuleView.jsx';
-import QandaView, { QANDA_SLUG } from './components/QandaView.jsx';
-import ArchitectView, { ARCHITECT_SLUG } from './components/ArchitectView.jsx';
-import ProgressBar from './components/ProgressBar.jsx';
+import QandaView from './components/QandaView.jsx';
+import ArchitectView from './components/ArchitectView.jsx';
+import CourseCatalog from './components/CourseCatalog.jsx';
+import CourseDetail from './components/CourseDetail.jsx';
 
-const PRIORITY_LABELS = { 1: 'Track 1 — Agentic AI Core', 2: 'Track 2 — Production & Integration', 3: 'Track 3 — Applied Architecture' };
+const PRIORITY_LABELS = {
+  1: 'Track 1 — Agentic AI Core',
+  2: 'Track 2 — Production & Integration',
+  3: 'Track 3 — Applied Architecture',
+};
+
+const CATALOG = [
+  { id: 'ai', kind: 'modules', title: 'AI Courseware', subtitle: 'Agentic Systems & Enterprise Architecture',
+    blurb: 'LangGraph, GraphRAG, agent memory, evals, RAG, MCP, iPaaS, and a capstone — 9 modules across three tracks.',
+    accent: 'p1', emoji: '🤖', pill: '9 modules' },
+  { id: 'system-design', kind: 'modules', title: 'System Design', subtitle: 'High-Level Design (HLD)',
+    blurb: 'Scalability, databases, caching, messaging, CAP, and design case studies.',
+    accent: 'p3', emoji: '🏗️', pill: '7 modules' },
+  { id: 'low-level-design', kind: 'modules', title: 'Low-Level Design', subtitle: 'OOD & Design Patterns (LLD)',
+    blurb: 'OOP, SOLID, UML, and the design-pattern families, with LLD case studies.',
+    accent: 'p2', emoji: '🧩', pill: '7 modules' },
+  { id: 'architect', kind: 'architect', title: 'Software Architect', subtitle: 'Interview prep track',
+    blurb: 'Study resources and Q&A across the dimensions a senior architect is assessed on.',
+    accent: 'p2', emoji: '🧭', pill: 'Prep' },
+  { id: 'qanda', kind: 'qanda', title: 'Q&A Bank', subtitle: 'Agentic AI',
+    blurb: '50 concept, scenario, and behavioral questions with model answers.',
+    accent: 'accent', emoji: '💬', pill: '50 Q&A' },
+];
 
 export default function App() {
   const [modules, setModules] = useState([]);
@@ -13,8 +36,9 @@ export default function App() {
   const [lldModules, setLldModules] = useState([]);
   const [questionCount, setQuestionCount] = useState(0);
   const [architectCount, setArchitectCount] = useState(0);
-  const [selectedSlug, setSelectedSlug] = useState(null);
   const [doneKeys, setDoneKeys] = useState(new Set());
+  const [route, setRoute] = useState({ view: 'home' });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -29,7 +53,7 @@ export default function App() {
         setQuestionCount(questions.length);
         setArchitectCount(architectQs.length);
         setDoneKeys(new Set(prog.map((p) => p.key)));
-        if (mods.length) setSelectedSlug(mods[0].slug);
+        setLoading(false);
       })
       .catch((e) => setError(e.message));
   }, []);
@@ -59,110 +83,125 @@ export default function App() {
     setDoneKeys(new Set());
   };
 
-  const moduleDone = (m) =>
-    [...doneKeys].filter((k) => k.startsWith(`${m.slug}:`)).length;
+  // ── progress helpers ──
+  const donePrefix = (prefix) => [...doneKeys].filter((k) => k.startsWith(prefix)).length;
+  const modsForCourse = (id) =>
+    id === 'system-design' ? sdModules : id === 'low-level-design' ? lldModules : modules;
+  const sumTotal = (mods) => mods.reduce((s, m) => s + m.resourceCount + m.problemCount, 0);
+  const sumDone = (mods) => mods.reduce((s, m) => s + donePrefix(`${m.slug}:`), 0);
 
-  const renderModuleBtn = (m) => {
-    const total = m.resourceCount + m.problemCount;
-    const done = moduleDone(m);
-    return (
-      <button
-        key={m.slug}
-        className={`nav-item ${selectedSlug === m.slug ? 'active' : ''}`}
-        onClick={() => setSelectedSlug(m.slug)}
-      >
-        <span className="nav-item-title">{m.order}. {m.title}</span>
-        <span className={`nav-item-count ${done === total && total > 0 ? 'complete' : ''}`}>
-          {done}/{total}
-        </span>
-      </button>
-    );
+  const progressFor = (id) => {
+    if (id === 'qanda') return { done: donePrefix('qanda:'), total: questionCount, label: 'Reviewed' };
+    if (id === 'architect') return { done: donePrefix('architect:'), total: architectCount, label: 'Reviewed' };
+    const mods = modsForCourse(id);
+    return { done: sumDone(mods), total: sumTotal(mods), label: 'Lessons' };
   };
 
-  const totals = useMemo(() => {
-    const sum = (arr) => arr.reduce((s, m) => s + m.resourceCount + m.problemCount, 0);
-    const total = sum(modules) + sum(sdModules) + sum(lldModules) + questionCount + architectCount;
-    return { total, done: doneKeys.size };
-  }, [modules, sdModules, lldModules, doneKeys, questionCount, architectCount]);
+  const overall = useMemo(() => ({
+    done: doneKeys.size,
+    total: sumTotal(modules) + sumTotal(sdModules) + sumTotal(lldModules) + questionCount + architectCount,
+  }), [modules, sdModules, lldModules, questionCount, architectCount, doneKeys]);
 
-  const grouped = useMemo(() => {
-    const g = { 1: [], 2: [], 3: [] };
-    modules.forEach((m) => g[m.priority]?.push(m));
-    return g;
-  }, [modules]);
+  const catalogById = (id) => CATALOG.find((c) => c.id === id);
+  const moduleTitle = (slug) =>
+    [...modules, ...sdModules, ...lldModules].find((m) => m.slug === slug)?.title || 'Lesson';
+
+  const sectionsFor = (id) => {
+    if (id === 'ai') {
+      return [1, 2, 3].map((p) => ({
+        label: PRIORITY_LABELS[p],
+        modules: modules.filter((m) => m.priority === p),
+      }));
+    }
+    return [{ label: null, modules: modsForCourse(id) }];
+  };
+
+  const openTile = (c) => {
+    if (c.kind === 'qanda') setRoute({ view: 'qanda' });
+    else if (c.kind === 'architect') setRoute({ view: 'architect' });
+    else setRoute({ view: 'course', id: c.id });
+  };
+
+  const goHome = () => setRoute({ view: 'home' });
 
   if (error) {
-    return (
-      <div className="error-screen">
-        <h2>Something went wrong</h2>
-        <p>{error}</p>
-      </div>
-    );
+    return <div className="error-screen"><h2>Something went wrong</h2><p>{error}</p></div>;
   }
 
-  return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h1>AI Courseware</h1>
-          <p className="subtitle">Agentic Systems & Enterprise Architecture</p>
-          <ProgressBar done={totals.done} total={totals.total} label="Overall" />
+  // ── breadcrumb ──
+  const crumb = () => {
+    if (route.view === 'home') return null;
+    if (route.view === 'qanda') return <span className="crumb"><span className="sep">/</span><span className="current">Q&A Bank</span></span>;
+    if (route.view === 'architect') return <span className="crumb"><span className="sep">/</span><span className="current">Software Architect</span></span>;
+    if (route.view === 'course') return <span className="crumb"><span className="sep">/</span><span className="current">{catalogById(route.id).title}</span></span>;
+    if (route.view === 'lesson') {
+      const c = catalogById(route.backId);
+      return (
+        <span className="crumb">
+          <span className="sep">/</span>
+          <button onClick={() => setRoute({ view: 'course', id: route.backId })}>{c.title}</button>
+          <span className="sep">/</span>
+          <span className="current">{moduleTitle(route.slug)}</span>
+        </span>
+      );
+    }
+    return null;
+  };
+
+  // ── main body ──
+  const body = () => {
+    if (loading) return <p className="loading">Loading…</p>;
+    if (route.view === 'home') {
+      return <CourseCatalog catalog={CATALOG} progressFor={progressFor} overall={overall} onOpen={openTile} />;
+    }
+    if (route.view === 'course') {
+      return (
+        <CourseDetail
+          course={catalogById(route.id)}
+          sections={sectionsFor(route.id)}
+          doneKeys={doneKeys}
+          onOpenLesson={(slug) => setRoute({ view: 'lesson', slug, backId: route.id })}
+        />
+      );
+    }
+    if (route.view === 'lesson') {
+      return (
+        <div className="reading">
+          <button className="back-link" onClick={() => setRoute({ view: 'course', id: route.backId })}>
+            ← {catalogById(route.backId).title}
+          </button>
+          <ModuleView slug={route.slug} doneKeys={doneKeys} onToggle={toggleItem} />
         </div>
-        <nav>
-          {[1, 2, 3].map((p) => (
-            <div key={p} className="nav-group">
-              <div className={`nav-group-title priority-${p}`}>{PRIORITY_LABELS[p]}</div>
-              {grouped[p].map(renderModuleBtn)}
-            </div>
-          ))}
-          <div className="nav-group">
-            <div className="nav-group-title priority-1">Q&A</div>
-            <button
-              className={`nav-item ${selectedSlug === QANDA_SLUG ? 'active' : ''}`}
-              onClick={() => setSelectedSlug(QANDA_SLUG)}
-            >
-              <span className="nav-item-title">Q&A Bank</span>
-              <span className={`nav-item-count ${questionCount > 0 && moduleDone({ slug: QANDA_SLUG }) === questionCount ? 'complete' : ''}`}>
-                {moduleDone({ slug: QANDA_SLUG })}/{questionCount}
-              </span>
-            </button>
-          </div>
-          <div className="nav-group">
-            <div className="nav-group-title priority-2">Roles</div>
-            <button
-              className={`nav-item ${selectedSlug === ARCHITECT_SLUG ? 'active' : ''}`}
-              onClick={() => setSelectedSlug(ARCHITECT_SLUG)}
-            >
-              <span className="nav-item-title">Software Architect</span>
-              <span className={`nav-item-count ${architectCount > 0 && moduleDone({ slug: ARCHITECT_SLUG }) === architectCount ? 'complete' : ''}`}>
-                {moduleDone({ slug: ARCHITECT_SLUG })}/{architectCount}
-              </span>
-            </button>
-          </div>
-          {sdModules.length > 0 && (
-            <div className="nav-group">
-              <div className="nav-group-title priority-3">Course · System Design</div>
-              {sdModules.map(renderModuleBtn)}
-            </div>
-          )}
-          {lldModules.length > 0 && (
-            <div className="nav-group">
-              <div className="nav-group-title priority-2">Course · Low-Level Design</div>
-              {lldModules.map(renderModuleBtn)}
-            </div>
-          )}
-        </nav>
-        <button className="reset-btn" onClick={resetAll}>Reset progress</button>
-      </aside>
-      <main className="content">
-        {selectedSlug === QANDA_SLUG
-          ? <QandaView doneKeys={doneKeys} onToggle={toggleItem} />
-          : selectedSlug === ARCHITECT_SLUG
-            ? <ArchitectView doneKeys={doneKeys} onToggle={toggleItem} />
-            : selectedSlug
-              ? <ModuleView slug={selectedSlug} doneKeys={doneKeys} onToggle={toggleItem} />
-              : <p className="loading">Loading…</p>}
-      </main>
+      );
+    }
+    if (route.view === 'qanda') {
+      return (
+        <div className="reading">
+          <button className="back-link" onClick={goHome}>← All courses</button>
+          <QandaView doneKeys={doneKeys} onToggle={toggleItem} />
+        </div>
+      );
+    }
+    if (route.view === 'architect') {
+      return (
+        <div className="reading">
+          <button className="back-link" onClick={goHome}>← All courses</button>
+          <ArchitectView doneKeys={doneKeys} onToggle={toggleItem} />
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="app">
+      <header className="app-topbar">
+        <button className="brand" onClick={goHome}>AI Courseware</button>
+        {crumb()}
+        <div className="topbar-spacer" />
+        <button className="topbar-reset" onClick={resetAll}>Reset progress</button>
+      </header>
+      <div className="app-body">{body()}</div>
     </div>
   );
 }
