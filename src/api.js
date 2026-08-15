@@ -5,13 +5,15 @@
 import { modules as aiModules } from './data/modules.js';
 import { qandaQuestions } from './data/qanda.js';
 import { architectResources, architectQuestions } from './data/architect.js';
+import { techleadResources, techleadQuestions } from './data/techlead.js';
 import { systemDesignModules, lowLevelDesignModules, dsaModules, databasesModules, devopsModules, nodejsModules } from './data/courses.js';
 
 const allModules = [
   ...aiModules, ...systemDesignModules, ...lowLevelDesignModules,
   ...dsaModules, ...databasesModules, ...devopsModules, ...nodejsModules,
 ];
-const allQanda = [...qandaQuestions, ...architectQuestions];
+const allQanda = [...qandaQuestions, ...architectQuestions, ...techleadQuestions];
+const allRoleResources = [...architectResources, ...techleadResources];
 
 const PROGRESS_KEY = 'ai-courseware:progress';
 
@@ -55,8 +57,8 @@ export const api = {
   getQanda: (track = 'ai') =>
     Promise.resolve(allQanda.filter((q) => (q.track || 'ai') === track).sort(byOrder)),
 
-  getArchitectResources: () =>
-    Promise.resolve([...architectResources].sort(byOrder)),
+  getRoleResources: (role = 'architect') =>
+    Promise.resolve(allRoleResources.filter((r) => (r.role || 'architect') === role).sort(byOrder)),
 
   getProgress: () => Promise.resolve(loadProgress().map((key) => ({ key }))),
 

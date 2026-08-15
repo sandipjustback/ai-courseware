@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from './api.js';
 import ModuleView from './components/ModuleView.jsx';
 import QandaView from './components/QandaView.jsx';
-import ArchitectView from './components/ArchitectView.jsx';
+import RoleView from './components/RoleView.jsx';
 import CourseCatalog from './components/CourseCatalog.jsx';
 import CourseDetail from './components/CourseDetail.jsx';
+import { ROLES, ROLE_IDS } from './roles.js';
 
 const PRIORITY_LABELS = {
   1: 'Track 1 — Agentic AI Core',
@@ -12,7 +13,7 @@ const PRIORITY_LABELS = {
   3: 'Track 3 — Applied Architecture',
 };
 
-const CATALOG = [
+const COURSE_TILES = [
   { id: 'ai', kind: 'modules', title: 'AI Courseware', subtitle: 'Agentic Systems & Enterprise Architecture',
     blurb: 'LangGraph, GraphRAG, agent memory, evals, RAG, MCP, iPaaS, and a capstone — 9 modules across three tracks.',
     accent: 'p1', emoji: '🤖', pill: '9 modules' },
@@ -34,9 +35,16 @@ const CATALOG = [
   { id: 'nodejs', kind: 'modules', title: 'Node.js & Backend', subtitle: 'Backend Engineering',
     blurb: 'Async JavaScript, Node internals, Express APIs, auth, data, and production.',
     accent: 'green', emoji: '🟢', pill: '6 modules' },
-  { id: 'architect', kind: 'architect', title: 'Software Architect', subtitle: 'Interview prep track',
-    blurb: 'Study resources and Q&A across the dimensions a senior architect is assessed on.',
-    accent: 'p2', emoji: '🧭', pill: 'Prep' },
+];
+
+const ROLE_TILES = ROLE_IDS.map((id) => ({
+  id, kind: 'role', roleId: id, title: ROLES[id].title, subtitle: ROLES[id].subtitle,
+  blurb: ROLES[id].blurb, accent: ROLES[id].accent, emoji: ROLES[id].emoji, pill: 'Prep',
+}));
+
+const CATALOG = [
+  ...COURSE_TILES,
+  ...ROLE_TILES,
   { id: 'qanda', kind: 'qanda', title: 'Q&A Bank', subtitle: 'Agentic AI',
     blurb: '50 concept, scenario, and behavioral questions with model answers.',
     accent: 'accent', emoji: '💬', pill: '50 Q&A' },
@@ -47,23 +55,24 @@ const MODULE_COURSE_IDS = CATALOG.filter((c) => c.kind === 'modules').map((c) =>
 export default function App() {
   const [courseModules, setCourseModules] = useState({});
   const [questionCount, setQuestionCount] = useState(0);
-  const [architectCount, setArchitectCount] = useState(0);
+  const [roleCounts, setRoleCounts] = useState({});
   const [doneKeys, setDoneKeys] = useState(new Set());
   const [route, setRoute] = useState({ view: 'home' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      api.getProgress(), api.getQanda(), api.getQanda('architect'),
-      ...MODULE_COURSE_IDS.map((id) => api.listModules(id)),
-    ])
-      .then(([prog, questions, architectQs, ...moduleLists]) => {
-        const cm = {};
-        MODULE_COURSE_IDS.forEach((id, i) => { cm[id] = moduleLists[i]; });
+    const roleQandas = ROLE_IDS.map((id) => api.getQanda(id));
+    const moduleLists = MODULE_COURSE_IDS.map((id) => api.listModules(id));
+    Promise.all([api.getProgress(), api.getQanda(), ...roleQandas, ...moduleLists])
+      .then(([prog, aiQ, ...rest]) => {
+        const roleArr = rest.slice(0, ROLE_IDS.length);
+        const modArr = rest.slice(ROLE_IDS.length);
+        const rc = {}; ROLE_IDS.forEach((id, i) => { rc[id] = roleArr[i].length; });
+        const cm = {}; MODULE_COURSE_IDS.forEach((id, i) => { cm[id] = modArr[i]; });
+        setRoleCounts(rc);
         setCourseModules(cm);
-        setQuestionCount(questions.length);
-        setArchitectCount(architectQs.length);
+        setQuestionCount(aiQ.length);
         setDoneKeys(new Set(prog.map((p) => p.key)));
         setLoading(false);
       })
@@ -100,17 +109,18 @@ export default function App() {
   const sumTotal = (mods) => mods.reduce((s, m) => s + m.resourceCount + m.problemCount, 0);
   const sumDone = (mods) => mods.reduce((s, m) => s + donePrefix(`${m.slug}:`), 0);
 
-  const progressFor = (id) => {
-    if (id === 'qanda') return { done: donePrefix('qanda:'), total: questionCount, label: 'Reviewed' };
-    if (id === 'architect') return { done: donePrefix('architect:'), total: architectCount, label: 'Reviewed' };
-    const mods = modsForCourse(id);
+  const progressFor = (c) => {
+    if (c.kind === 'qanda') return { done: donePrefix('qanda:'), total: questionCount, label: 'Reviewed' };
+    if (c.kind === 'role') return { done: donePrefix(`${c.roleId}:`), total: roleCounts[c.roleId] || 0, label: 'Reviewed' };
+    const mods = modsForCourse(c.id);
     return { done: sumDone(mods), total: sumTotal(mods), label: 'Lessons' };
   };
 
   const overall = useMemo(() => {
     const modTotal = MODULE_COURSE_IDS.reduce((s, id) => s + sumTotal(courseModules[id] || []), 0);
-    return { done: doneKeys.size, total: modTotal + questionCount + architectCount };
-  }, [courseModules, questionCount, architectCount, doneKeys]);
+    const roleTotal = ROLE_IDS.reduce((s, id) => s + (roleCounts[id] || 0), 0);
+    return { done: doneKeys.size, total: modTotal + questionCount + roleTotal };
+  }, [courseModules, questionCount, roleCounts, doneKeys]);
 
   const catalogById = (id) => CATALOG.find((c) => c.id === id);
   const moduleTitle = (slug) =>
@@ -128,7 +138,7 @@ export default function App() {
 
   const openTile = (c) => {
     if (c.kind === 'qanda') setRoute({ view: 'qanda' });
-    else if (c.kind === 'architect') setRoute({ view: 'architect' });
+    else if (c.kind === 'role') setRoute({ view: 'role', roleId: c.roleId });
     else setRoute({ view: 'course', id: c.id });
   };
 
@@ -140,8 +150,8 @@ export default function App() {
 
   const crumb = () => {
     if (route.view === 'home') return null;
-    const simple = { qanda: 'Q&A Bank', architect: 'Software Architect' }[route.view];
-    if (simple) return <span className="crumb"><span className="sep">/</span><span className="current">{simple}</span></span>;
+    if (route.view === 'qanda') return <span className="crumb"><span className="sep">/</span><span className="current">Q&A Bank</span></span>;
+    if (route.view === 'role') return <span className="crumb"><span className="sep">/</span><span className="current">{ROLES[route.roleId].title}</span></span>;
     if (route.view === 'course') return <span className="crumb"><span className="sep">/</span><span className="current">{catalogById(route.id).title}</span></span>;
     if (route.view === 'lesson') {
       const c = catalogById(route.backId);
@@ -189,7 +199,7 @@ export default function App() {
       </div>
     );
     if (route.view === 'qanda') return wrap(<QandaView doneKeys={doneKeys} onToggle={toggleItem} />);
-    if (route.view === 'architect') return wrap(<ArchitectView doneKeys={doneKeys} onToggle={toggleItem} />);
+    if (route.view === 'role') return wrap(<RoleView role={route.roleId} config={ROLES[route.roleId]} doneKeys={doneKeys} onToggle={toggleItem} />);
     return null;
   };
 
