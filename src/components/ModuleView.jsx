@@ -5,6 +5,22 @@ import ProgressBar from './ProgressBar.jsx';
 
 const KIND_ICONS = { docs: '📄', course: '🎓', article: '✍️', video: '🎬', paper: '📑', tool: '🔧' };
 
+// Render a written lesson body: blank-line-separated blocks become paragraphs,
+// and a block whose lines all start with "- " becomes a bullet list.
+function renderContent(content) {
+  return content.split('\n\n').map((block, i) => {
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length && lines.every((l) => l.startsWith('- '))) {
+      return (
+        <ul key={i} className="content-list">
+          {lines.map((l, j) => <li key={j}>{l.slice(2)}</li>)}
+        </ul>
+      );
+    }
+    return <p key={i} className="statement">{block}</p>;
+  });
+}
+
 export default function ModuleView({ slug, doneKeys, onToggle }) {
   const [mod, setMod] = useState(null);
   const [error, setError] = useState(null);
@@ -44,9 +60,7 @@ export default function ModuleView({ slug, doneKeys, onToggle }) {
       {mod.content && (
         <section>
           <h3>Answer</h3>
-          {mod.content.split('\n\n').map((para, i) => (
-            <p key={i} className="statement">{para}</p>
-          ))}
+          {renderContent(mod.content)}
         </section>
       )}
 

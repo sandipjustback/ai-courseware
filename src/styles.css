@@ -227,3 +227,6 @@ input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--green); 
   .catalog, .course-detail { padding: 24px 16px 60px; }
   .reading { padding: 20px 16px 60px; }
 }
+
+.content-list { padding-left: 20px; margin: 4px 0 10px; font-size: 14px; }
+.content-list li { margin-bottom: 6px; }
