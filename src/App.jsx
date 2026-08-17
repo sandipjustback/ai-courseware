@@ -14,6 +14,9 @@ const PRIORITY_LABELS = {
 };
 
 const COURSE_TILES = [
+  { id: 'prep1', kind: 'modules', title: 'Prep 1', subtitle: 'Backend / Eng Lead — JD + deep dives',
+    blurb: 'A targeted interview-prep course: JD focus areas (Java/Spring, microservices, Kafka, AWS, K8s, CI/CD, leadership) plus deep-dive answers to the specific questions.',
+    accent: 'p1', emoji: '🎯', pill: 'Prep course' },
   { id: 'ai', kind: 'modules', title: 'AI Courseware', subtitle: 'Agentic Systems & Enterprise Architecture',
     blurb: 'LangGraph, GraphRAG, agent memory, evals, RAG, MCP, iPaaS, and a capstone — 9 modules across three tracks.',
     accent: 'p1', emoji: '🤖', pill: '9 modules' },
@@ -133,7 +136,17 @@ export default function App() {
         modules: modsForCourse('ai').filter((m) => m.priority === p),
       }));
     }
-    return [{ label: null, modules: modsForCourse(id) }];
+    const mods = modsForCourse(id);
+    if (mods.some((m) => m.section)) {
+      const map = new Map();
+      mods.forEach((m) => {
+        const s = m.section || 'Lessons';
+        if (!map.has(s)) map.set(s, []);
+        map.get(s).push(m);
+      });
+      return [...map.entries()].map(([label, modules]) => ({ label, modules }));
+    }
+    return [{ label: null, modules: mods }];
   };
 
   const openTile = (c) => {

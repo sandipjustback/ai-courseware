@@ -7,10 +7,12 @@ import { qandaQuestions } from './data/qanda.js';
 import { architectResources, architectQuestions } from './data/architect.js';
 import { techleadResources, techleadQuestions } from './data/techlead.js';
 import { systemDesignModules, lowLevelDesignModules, dsaModules, databasesModules, devopsModules, nodejsModules } from './data/courses.js';
+import { prep1Modules } from './data/prep1.js';
 
 const allModules = [
   ...aiModules, ...systemDesignModules, ...lowLevelDesignModules,
   ...dsaModules, ...databasesModules, ...devopsModules, ...nodejsModules,
+  ...prep1Modules,
 ];
 const allQanda = [...qandaQuestions, ...architectQuestions, ...techleadQuestions];
 const allRoleResources = [...architectResources, ...techleadResources];
@@ -37,6 +39,7 @@ const light = (m) => ({
   title: m.title,
   tagline: m.tagline,
   badge: m.badge,
+  section: m.section,
   resourceCount: (m.resources || []).length,
   problemCount: (m.problems || []).length,
 });
