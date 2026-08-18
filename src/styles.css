@@ -230,3 +230,48 @@ input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--green); 
 
 .content-list { padding-left: 20px; margin: 4px 0 10px; font-size: 14px; }
 .content-list li { margin-bottom: 6px; }
+/* ── Mobile responsive ─────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .app-topbar { flex-wrap: wrap; padding: 10px 14px; gap: 8px; }
+  .crumb { font-size: 12.5px; min-width: 0; }
+  .crumb .current { display: inline-block; max-width: 52vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  .catalog, .course-detail { padding: 22px 15px 64px; }
+  .reading { padding: 18px 15px 64px; }
+  .catalog-intro h1 { font-size: 24px; }
+  .tiles { grid-template-columns: 1fr; gap: 14px; }
+  .lesson-tiles { grid-template-columns: 1fr; }
+  .tile { padding: 18px; }
+  .module-header h2, .course-detail h2 { font-size: 22px; }
+  .topbar-reset { padding: 6px 10px; }
+}
+.statement, .content-list li, .tile-blurb, .course-blurb, .lt-tagline, .tagline { overflow-wrap: anywhere; }
+.topbar-pdf { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+.topbar-pdf:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── Print / PDF book ──────────────────────────────────────────────── */
+.print-book { display: none; }
+@media print {
+  .app { display: none !important; }
+  .print-book { display: block !important; color: #111; background: #fff; font-size: 11pt; line-height: 1.5; }
+  @page { margin: 16mm 15mm; }
+  .print-book a { color: #1a4fbf; text-decoration: none; }
+  .pb-cover { text-align: center; padding-top: 28mm; page-break-after: always; }
+  .pb-brand { text-transform: uppercase; letter-spacing: 2px; font-size: 10pt; color: #666; }
+  .pb-cover h1 { font-size: 30pt; margin: 8mm 0 4mm; }
+  .pb-sub { font-size: 13pt; color: #444; }
+  .pb-meta { font-size: 10pt; color: #888; margin-top: 6mm; }
+  .pb-chapter { page-break-before: always; }
+  .pb-chapter h2 { font-size: 18pt; margin: 0 0 2mm; border-bottom: 1px solid #ccc; padding-bottom: 2mm; }
+  .pb-label { text-transform: uppercase; letter-spacing: 1px; font-size: 8.5pt; color: #999; margin-bottom: 1mm; }
+  .pb-tagline { font-style: italic; color: #555; margin-bottom: 3mm; }
+  .pb-why { background: #f4f6fb; padding: 3mm 4mm; border-left: 3px solid #1a4fbf; margin: 3mm 0; }
+  .pb-chapter h3 { font-size: 12pt; margin: 5mm 0 2mm; color: #1a4fbf; }
+  .print-book p { margin: 0 0 3mm; }
+  .print-book ul { margin: 0 0 3mm; padding-left: 6mm; }
+  .print-book li { margin-bottom: 1.5mm; }
+  .pb-res li { margin-bottom: 3mm; }
+  .pb-url { font-size: 8.5pt; color: #777; word-break: break-all; }
+  .pb-q { font-weight: 700; margin-top: 4mm; }
+  .pb-qa { page-break-inside: avoid; margin-bottom: 4mm; }
+  .pb-hint { font-size: 9.5pt; color: #666; }
+}

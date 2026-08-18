@@ -57,6 +57,9 @@ export const api = {
     return m ? Promise.resolve(m) : Promise.reject(new Error('Module not found'));
   },
 
+  getCourseModulesFull: (course = 'ai') =>
+    Promise.resolve(allModules.filter((m) => (m.course || 'ai') === course).sort(byOrder)),
+
   getQanda: (track = 'ai') =>
     Promise.resolve(allQanda.filter((q) => (q.track || 'ai') === track).sort(byOrder)),
 

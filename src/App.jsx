@@ -5,6 +5,7 @@ import QandaView from './components/QandaView.jsx';
 import RoleView from './components/RoleView.jsx';
 import CourseCatalog from './components/CourseCatalog.jsx';
 import CourseDetail from './components/CourseDetail.jsx';
+import PrintBook from './components/PrintBook.jsx';
 import { ROLES, ROLE_IDS } from './roles.js';
 
 const PRIORITY_LABELS = {
@@ -63,6 +64,7 @@ export default function App() {
   const [route, setRoute] = useState({ view: 'home' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [printBook, setPrintBook] = useState(null);
 
   useEffect(() => {
     const roleQandas = ROLE_IDS.map((id) => api.getQanda(id));
@@ -106,6 +108,61 @@ export default function App() {
     await api.resetProgress();
     setDoneKeys(new Set());
   };
+
+  const groupBy = (arr, key) => {
+    const m = new Map();
+    arr.forEach((x) => { const k = x[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(x); });
+    return [...m.entries()];
+  };
+
+  const buildCourseBook = async (id) => {
+    const mods = await api.getCourseModulesFull(id);
+    const cat = catalogById(id);
+    return {
+      title: cat ? cat.title : 'Course',
+      subtitle: cat ? cat.subtitle : '',
+      chapters: mods.map((m) => ({
+        label: m.section || null,
+        title: m.order + '. ' + m.title,
+        tagline: m.tagline, why: m.whyItMatters, content: m.content,
+        objectives: m.objectives, resources: m.resources, problems: m.problems,
+      })),
+    };
+  };
+
+  const buildRoleBook = async (roleId) => {
+    const [qs, res] = await Promise.all([api.getQanda(roleId), api.getRoleResources(roleId)]);
+    const cfg = ROLES[roleId];
+    const chapters = [{ title: 'What this role is evaluated on', content: cfg.intro, objectives: cfg.dimensions.map(([n, b]) => n + ' — ' + b) }];
+    groupBy(res, 'area').forEach(([area, items]) => chapters.push({ label: 'Study track', title: area, resources: items }));
+    groupBy(qs, 'category').forEach(([c, items]) => chapters.push({ label: 'Q&A', title: c, qa: items }));
+    return { title: cfg.title, subtitle: cfg.subtitle, chapters };
+  };
+
+  const buildQandaBook = async () => {
+    const qs = await api.getQanda('ai');
+    return { title: 'Q&A Bank', subtitle: 'Agentic AI', chapters: groupBy(qs, 'category').map(([c, items]) => ({ title: c, qa: items })) };
+  };
+
+  const downloadPdf = async () => {
+    try {
+      let book = null;
+      if (route.view === 'course' || route.view === 'lesson') book = await buildCourseBook(route.view === 'course' ? route.id : route.backId);
+      else if (route.view === 'role') book = await buildRoleBook(route.roleId);
+      else if (route.view === 'qanda') book = await buildQandaBook();
+      if (book) setPrintBook(book);
+    } catch (e) { window.alert('Could not build PDF: ' + e.message); }
+  };
+
+  useEffect(() => {
+    if (!printBook) return;
+    const done = () => setPrintBook(null);
+    window.addEventListener('afterprint', done, { once: true });
+    const t = setTimeout(() => window.print(), 120);
+    return () => { clearTimeout(t); window.removeEventListener('afterprint', done); };
+  }, [printBook]);
+
+  const canPdf = ['course', 'lesson', 'role', 'qanda'].includes(route.view);
 
   const donePrefix = (prefix) => [...doneKeys].filter((k) => k.startsWith(prefix)).length;
   const modsForCourse = (id) => courseModules[id] || [];
@@ -217,14 +274,18 @@ export default function App() {
   };
 
   return (
+    <>
     <div className="app">
       <header className="app-topbar">
         <button className="brand" onClick={goHome}>AI Courseware</button>
         {crumb()}
         <div className="topbar-spacer" />
+        {canPdf && <button className="topbar-pdf" onClick={downloadPdf} title="Download as PDF (book with links)">⬇ PDF</button>}
         <button className="topbar-reset" onClick={resetAll}>Reset progress</button>
       </header>
       <div className="app-body">{body()}</div>
     </div>
+    <PrintBook book={printBook} />
+    </>
   );
 }
