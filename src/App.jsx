@@ -15,6 +15,9 @@ const PRIORITY_LABELS = {
 };
 
 const COURSE_TILES = [
+  { id: 'roadmap', kind: 'modules', title: 'AI Architect Roadmap', subtitle: 'Plan to a lead AI-Architect role at a top MNC',
+    blurb: 'A phased ~9-month plan — GenAI depth, architecture mastery, certifications, visible impact, thought leadership, and a targeted search — with completion times, wired to the courses in this app.',
+    accent: 'p1', emoji: '🗺️', pill: 'Plan · ~9 mo' },
   { id: 'prep1', kind: 'modules', title: 'Prep 1', subtitle: 'Backend / Eng Lead — JD + deep dives',
     blurb: 'A targeted interview-prep course: JD focus areas (Java/Spring, microservices, Kafka, AWS, K8s, CI/CD, leadership) plus deep-dive answers to the specific questions.',
     accent: 'p1', emoji: '🎯', pill: 'Prep course' },

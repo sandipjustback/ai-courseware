@@ -9,6 +9,7 @@ import { techleadResources, techleadQuestions } from './data/techlead.js';
 import { systemDesignModules, lowLevelDesignModules, dsaModules, databasesModules, devopsModules, nodejsModules } from './data/courses.js';
 import { algorithmsModules } from './data/algorithms.js';
 import { aiCertModules, cloudCertModules } from './data/certs.js';
+import { roadmapModules } from './data/roadmap.js';
 import { prep1Modules } from './data/prep1.js';
 
 const allModules = [
@@ -18,6 +19,7 @@ const allModules = [
   ...algorithmsModules,
   ...aiCertModules,
   ...cloudCertModules,
+  ...roadmapModules,
 ];
 const allQanda = [...qandaQuestions, ...architectQuestions, ...techleadQuestions];
 const allRoleResources = [...architectResources, ...techleadResources];
