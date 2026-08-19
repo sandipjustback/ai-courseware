@@ -8,6 +8,7 @@ import { architectResources, architectQuestions } from './data/architect.js';
 import { techleadResources, techleadQuestions } from './data/techlead.js';
 import { systemDesignModules, lowLevelDesignModules, dsaModules, databasesModules, devopsModules, nodejsModules } from './data/courses.js';
 import { algorithmsModules } from './data/algorithms.js';
+import { aiCertModules, cloudCertModules } from './data/certs.js';
 import { prep1Modules } from './data/prep1.js';
 
 const allModules = [
@@ -15,6 +16,8 @@ const allModules = [
   ...dsaModules, ...databasesModules, ...devopsModules, ...nodejsModules,
   ...prep1Modules,
   ...algorithmsModules,
+  ...aiCertModules,
+  ...cloudCertModules,
 ];
 const allQanda = [...qandaQuestions, ...architectQuestions, ...techleadQuestions];
 const allRoleResources = [...architectResources, ...techleadResources];

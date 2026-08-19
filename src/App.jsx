@@ -42,6 +42,12 @@ const COURSE_TILES = [
   { id: 'algorithms', kind: 'modules', title: 'Architecture Algorithms', subtitle: 'Must-know patterns & algorithms',
     blurb: 'Noisy neighbor, rate limiting, load balancing, consistent hashing, caching/eviction, probabilistic structures, consensus, resilience, and distributed-data patterns.',
     accent: 'p3', emoji: '📐', pill: '9 topics' },
+  { id: 'ai-certs', kind: 'modules', title: 'AI Certifications', subtitle: 'ML / GenAI credentials for this level',
+    blurb: 'Cloud AI/ML engineering, Generative AI & LLM certs, and respected applied ML certificates — with official exam links.',
+    accent: 'p1', emoji: '🎓', pill: 'Certs' },
+  { id: 'cloud-certs', kind: 'modules', title: 'Cloud & Platform Certifications', subtitle: 'AWS, MongoDB, Kubernetes & more',
+    blurb: 'AWS, MongoDB, CNCF Kubernetes, Terraform, Kafka, and Azure/GCP architect certs — the credentials that back an architect resume.',
+    accent: 'accent', emoji: '📜', pill: 'Certs' },
 ];
 
 const ROLE_TILES = ROLE_IDS.map((id) => ({
