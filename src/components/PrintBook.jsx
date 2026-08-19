@@ -18,7 +18,7 @@ function Resources({ items }) {
       <ul className="pb-res">
         {items.map((r) => (
           <li key={r.key || r.url}>
-            <a href={r.url}>{r.title}</a>
+            <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>
             <br /><span className="pb-url">{r.url}</span>
           </li>
         ))}

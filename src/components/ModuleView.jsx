@@ -86,7 +86,7 @@ export default function ModuleView({ slug, doneKeys, onToggle }) {
                     onChange={() => onToggle(slug, 'resource', r.key)}
                   />
                   <span className="kind">{KIND_ICONS[r.kind] || '📄'}</span>
-                  <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
+                  <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>
                 </label>
                 {r.note && <span className="note">{r.note}</span>}
               </li>

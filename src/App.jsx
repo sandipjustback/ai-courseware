@@ -39,6 +39,9 @@ const COURSE_TILES = [
   { id: 'nodejs', kind: 'modules', title: 'Node.js & Backend', subtitle: 'Backend Engineering',
     blurb: 'Async JavaScript, Node internals, Express APIs, auth, data, and production.',
     accent: 'green', emoji: '🟢', pill: '6 modules' },
+  { id: 'algorithms', kind: 'modules', title: 'Architecture Algorithms', subtitle: 'Must-know patterns & algorithms',
+    blurb: 'Noisy neighbor, rate limiting, load balancing, consistent hashing, caching/eviction, probabilistic structures, consensus, resilience, and distributed-data patterns.',
+    accent: 'p3', emoji: '📐', pill: '9 topics' },
 ];
 
 const ROLE_TILES = ROLE_IDS.map((id) => ({
